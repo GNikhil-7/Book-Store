@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        .styled-table {
+            border-collapse: collapse;
+            margin: 25px 0;
+            font-size: 0.9em;
+            font-family: sans-serif;
+            min-width: 400px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+            margin-left: 35%;
+        }
+
+        .styled-table tr {
+            background-color: #009879;
+            color: #ffffff;
+            text-align: left;
+        }
+
+        .styled-table th,
+        .styled-table td {
+            padding: 12px 15px;
+        }
+
+        .styled-table  tr {
+            border-bottom: 1px solid #dddddd;
+        }
+        
+        .styled-table  tr:nth-of-type(even) {
+            background-color: rgba(8, 85, 62, 0.767);
+        }
+        
+        .styled-table  tr:last-of-type {
+            border-bottom: 2px solid #009879;
+        }
+
+        .styled-table  tr.active-row {
+            font-weight: bold;
+            color: #009879;
+        }
+
+        .container{
+            position: fixed;
+            top: 15px;
+            left: 50px;
+            width: 150px;
+            height: auto;
+            padding: 2rem;
+            border-radius: 2px;
+            background: teal;
+        }
+  
+        
+    </style>
+
+</head>
+
+<body>
+  
+    <table class="styled-table">
+        <tr>
+            <th hidden="true">id</th>
+            <th>Title</th>
+            <th>Version</th>
+            <th>Year</th>
+            <th>Author</th>
+        </tr>
+        <%books.forEach(book=> {
+            if(book.title && book.title.trim() !== ''){
+            %>
+            <tr>
+                <td class="cntn" hidden="true">
+                    <%= book.id %>
+                </td>
+                <td class="cntn">
+                    <%= book.title %>
+                </td>
+                <td class="cntn">
+                    <%= book.version %>
+                </td>
+                <td class="cntn">
+                    <%= book.year %>
+                </td>
+                <td class="cntn">
+                    <%= book.author %>
+                </td>
+                <td><button class="edit">Edit</button></td>
+                <td><button class="save" hidden>Save</button></td>
+                <td><button class="delete">Delete</button></td>
+            </tr>
+            <%}}) %>
+
+    </table>
+
+    <div>
+
+        <!-- not good for multiuser system timstamp can be clusterd or conflicts occurs only for single user  -->
+
+        <form action="/add" method="post"
+            onsubmit="const ele=document.querySelector('#id');if(ele){ele.value = Date.now();}return true;">
+            <div>
+                <input type="text" name="id" hidden="true" id='id'>
+            </div>
+        <div class="container">    
+            <div>
+                <label for="title">Title:</label>
+                <input type="text" name="title" id="title">
+
+            </div>
+
+            <div>
+                <label for="version">Version:</label>
+                <input type="text" name="version" id="version">
+            </div>
+
+            <div>
+                <label for="year">Year:</label>
+                <input type="text" name="year" id="year">
+            </div>
+
+            <div>
+                <label for="author">Author:</label>
+                <input type="text" name="author" id="author">
+            </div>
+
+            <div>
+                <button type="submit">Add Book</button>
+                <!-- <button type="edit" id="edit">Edit</button>
+                <button type="delete" id="delete">Delete</button> -->
+            </div>
+        </div>    
+        </form>
+    </div>
+    <script>
+        function getOutermostParent(elem, parentName) {
+            while (elem && elem.nodeName.toLowerCase() != parentName.toLowerCase() && elem.parentElement) {
+                elem = elem.parentElement;
+            }
+            if (elem.nodeName.toLowerCase() == parentName.toLowerCase()) {
+                return elem
+            }
+            return null;
+        }
+        function mapTableKeys(elems) {
+            var payload = [];
+            var trs = document.querySelectorAll("th");
+            Array.prototype.forEach.call(trs, function (elem, index) {
+                payload.push(`${elem.textContent}=${elems[index] ? elems[index].textContent : ''}`);
+            })
+            return payload.join("&");
+        }
+
+        async function sendPayload(payload, url) {
+            var ajx = new XMLHttpRequest();
+            ajx.open('POST', url);
+            ajx.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            ajx.send(payload);
+            ajx.addEventListener("load", function () {
+                if (ajx.status == 200) {
+                    console.log("success");
+                }
+                else {
+                    console.log("not success");
+                }
+            })
+        }
+        document.addEventListener("DOMContentLoaded", function () {
+            var table = this.querySelector("table");
+            table?.addEventListener("click", function (ev) {
+                if (ev.target.nodeName.toLowerCase() == 'button') {
+                    var targetNode = getOutermostParent(ev.target, 'tr');
+                    var btnName = ev.target.className.toLowerCase();
+                    if (targetNode) {
+                        var edtBtn = targetNode.querySelector(".edit");
+                        var svBtn = targetNode.querySelector(".save");
+                        var dltBtn = targetNode.querySelector(".delete");
+                        var tContent = targetNode.querySelectorAll('.cntn');
+                        if (btnName == 'edit') {
+                            edtBtn.hidden = true;
+                            svBtn.hidden = false;
+                            Array.prototype.map.call(tContent, function (ele) {
+                                ele.contentEditable = true;
+                            })
+                        }
+                        else if (btnName == "save") {
+                            edtBtn.hidden = false;
+                            svBtn.hidden = true;
+                            Array.prototype.map.call(tContent, function (ele) {
+                                ele.contentEditable = false;
+                            })
+                            sendPayload(mapTableKeys(tContent), "/add");
+                        }
+                        else {
+                            sendPayload(mapTableKeys(tContent), "/delete");
+                            document.location.reload();
+                        }
+                    }
+                }
+            })
+        })
+    </script>
+</body>
+
+</html>
